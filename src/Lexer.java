@@ -43,176 +43,188 @@ public class Lexer {
 
     private void readch(BufferedReader br) {
         try {
-            this.peek = (char)br.read();
+            peek = (char)br.read();
         } catch (IOException var3) {
-            this.peek = '\uffff';
+            peek = '\uffff';
         }
 
     }
 
     public Token lexical_scan(BufferedReader br) {
-        for(; this.peek == ' ' || this.peek == '\t' || this.peek == '\n' || this.peek == '\r'; this.readch(br)) {
-            if (this.peek == '\n') {
+        for(; peek == ' ' || peek == '\t' || peek == '\n' || peek == '\r'; readch(br)) {
+            if (peek == '\n') {
                 ++line;
             }
         }
 
-        switch (this.peek) {
+        switch (peek) {
             case '!':
-                this.peek = ' ';
+                peek = ' ';
                 return Token.not;
             case '&':
-                this.readch(br);
-                if (this.peek == '&') {
-                    this.peek = ' ';
+                readch(br);
+                if (peek == '&') {
+                    peek = ' ';
                     return Word.and;
                 }
 
-                System.err.println("Erroneous character after & : " + this.peek);
+                System.err.println("Erroneous character after '&' : " + peek);
                 return null;
             case '(':
-                this.peek = ' ';
+                peek = ' ';
                 return Token.lpt;
             case ')':
-                this.peek = ' ';
+                peek = ' ';
                 return Token.rpt;
             case '*':
-                this.peek = ' ';
+                peek = ' ';
                 return Token.mult;
             case '+':
-                this.peek = ' ';
+                peek = ' ';
                 return Token.plus;
             case ',':
-                this.peek = ' ';
+                peek = ' ';
                 return Token.comma;
             case '-':
-                this.peek = ' ';
+                peek = ' ';
                 return Token.minus;
             case '/':
-                this.peek = ' ';
+                peek = ' ';
                 return Token.div;
             case ':':
-                this.readch(br);
-                if (this.peek == '=') {
-                    this.peek = ' ';
+                readch(br);
+                if (peek == '=') {
+                    peek = ' ';
                     return Word.init;
                 }
 
-                System.err.println("Erroneous character after & : " + this.peek);
+                System.err.println("Erroneous character after ':' : " + peek);
                 return null;
             case ';':
-                this.peek = ' ';
+                peek = ' ';
                 return Token.semicolon;
             case '<':
-                this.readch(br);
-                if (this.peek == '=') {
-                    this.peek = ' ';
+                readch(br);
+                if (peek == '=') {
+                    peek = ' ';
                     return Word.le;
                 } else {
-                    if (this.peek == '>') {
-                        this.peek = ' ';
+                    if (peek == '>') {
+                        peek = ' ';
                         return Word.ne;
                     }
 
-                    this.peek = ' ';
+                    peek = ' ';
                     return Word.lt;
                 }
             case '=':
-                this.readch(br);
-                if (this.peek == '=') {
-                    this.peek = ' ';
+                readch(br);
+                if (peek == '=') {
+                    peek = ' ';
                     return Word.eq;
                 }
 
-                System.err.println("Erroneous character after & : " + this.peek);
+                System.err.println("Erroneous character after '=' : " + peek);
                 return null;
             case '>':
-                this.readch(br);
-                if (this.peek == '=') {
-                    this.peek = ' ';
+                readch(br);
+                if (peek == '=') {
+                    peek = ' ';
                     return Word.ge;
                 }
 
-                this.peek = ' ';
+                peek = ' ';
                 return Word.gt;
             case '[':
-                this.peek = ' ';
+                peek = ' ';
                 return Token.lpq;
             case ']':
-                this.peek = ' ';
+                peek = ' ';
                 return Token.rpq;
             case '{':
-                this.peek = ' ';
+                peek = ' ';
                 return Token.lpg;
             case '|':
-                this.readch(br);
-                if (this.peek == '|') {
-                    this.peek = ' ';
+                readch(br);
+                if (peek == '|') {
+                    peek = ' ';
                     return Word.or;
                 }
 
-                System.err.println("Erroneous character after & : " + this.peek);
+                System.err.println("Erroneous character after '|' : " + peek);
                 return null;
+
             case '}':
-                this.peek = ' ';
+                peek = ' ';
                 return Token.rpg;
+
             case '\uffff':
                 return new Token(-1);
+
             default:
                 String s;
-                if (Character.isLetter(this.peek)) {
-                    s = "" + this.peek;
-                    this.readch(br);
+                if (Character.isLetter(peek)) {
+                    s = "" + peek;
+                    readch(br);
 
-                    while(Character.isLetter(this.peek)) {
-                        s = s + this.peek;
-                        this.readch(br);
+                    while(Character.isLetter(peek)) {
+                        s = s + peek;
+                        readch(br);
                     }
 
-                    switch (s) {
-                        case "assign":
-                            this.peek = ' ';
-                            return Word.assign;
-                        case "to":
-                            this.peek = ' ';
-                            return Word.to;
-                        case "if":
-                            this.peek = ' ';
-                            return Word.iftok;
-                        case "else":
-                            this.peek = ' ';
-                            return Word.elsetok;
-                        case "do":
-                            this.peek = ' ';
-                            return Word.dotok;
-                        case "for":
-                            this.peek = ' ';
-                            return Word.fortok;
-                        case "begin":
-                            this.peek = ' ';
-                            return Word.begin;
-                        case "end":
-                            this.peek = ' ';
-                            return Word.end;
-                        case "print":
-                            this.peek = ' ';
-                            return Word.print;
-                        case "read":
-                            this.peek = ' ';
-                            return Word.read;
-                        default:
-                            return (Token)(this.checkVar(s) ? new Word(257, s) : new Token(-1));
-                    }
-                } else if (!Character.isDigit(this.peek)) {
-                    System.err.println("Erroneous character: " + this.peek);
+                    return switch (s) {
+                        case "assign" -> {
+                            peek = ' ';
+                            yield Word.assign;
+                        }
+                        case "to" -> {
+                            peek = ' ';
+                            yield Word.to;
+                        }
+                        case "if" -> {
+                            peek = ' ';
+                            yield Word.iftok;
+                        }
+                        case "else" -> {
+                            peek = ' ';
+                            yield Word.elsetok;
+                        }
+                        case "do" -> {
+                            peek = ' ';
+                            yield Word.dotok;
+                        }
+                        case "for" -> {
+                            peek = ' ';
+                            yield Word.fortok;
+                        }
+                        case "begin" -> {
+                            peek = ' ';
+                            yield Word.begin;
+                        }
+                        case "end" -> {
+                            peek = ' ';
+                            yield Word.end;
+                        }
+                        case "print" -> {
+                            peek = ' ';
+                            yield Word.print;
+                        }
+                        case "read" -> {
+                            peek = ' ';
+                            yield Word.read;
+                        }
+                        default -> (Token) (checkVar(s) ? new Word(257, s) : new Token(-1));
+                    };
+                } else if (!Character.isDigit(peek)) {
+                    System.err.println("Erroneous character: " + peek);
                     return null;
                 } else {
-                    s = "" + this.peek;
-                    this.readch(br);
+                    s = "" + peek;
+                    readch(br);
 
-                    while(Character.isDigit(this.peek)) {
-                        s = s + this.peek;
-                        this.readch(br);
+                    while(Character.isDigit(peek)) {
+                        s = s + peek;
+                        readch(br);
                     }
 
                     try {
@@ -236,7 +248,7 @@ public class Lexer {
             Token tok;
             do {
                 tok = lex.lexical_scan(br);
-                System.out.println("Scan: " + String.valueOf(tok));
+                System.out.println("Scan: " + tok);
             } while(tok.tag != -1);
 
             br.close();
