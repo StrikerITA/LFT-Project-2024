@@ -9,35 +9,35 @@ public class Lexer {
     public Lexer() {}
 
     private boolean checkVar(String s) {
-        int state = 48;
+        int state = 0;
         int i = 0;
 
-        while(state != 1 && i < s.length()) {
-            char ch = s.charAt(i++);
+        while (state != 1 && i < s.length()) {
+            final char ch = s.charAt(i++);
+
             switch (state) {
-                case 2:
-                    if (ch == '_') {
-                        break;
-                    }
-
-                    if ((ch < 'a' || ch > 'z') && (ch < 'A' || ch > 'Z')) {
-                        state = -1;
-                        break;
-                    }
-
-                    state = 1;
-                    break;
-                case 48:
-                    if (ch == '_') {
+                case 0 -> {
+                    if (ch == '_')
                         state = 2;
-                    } else if ((ch < 'a' || ch > 'z') && (ch < 'A' || ch > 'Z')) {
-                        state = -1;
-                    } else {
+                    else if ((ch>='a' && ch<='z') || (ch>='A' && ch<='Z'))
                         state = 1;
-                    }
+                    else
+                        state = -1; //pozzo
+                }
+                case 2 -> {
+                    if (ch == '_')
+                        state = 2;
+                    else if ((ch>='a' && ch<='z') || (ch>='A' && ch<='Z'))
+                        state = 1;
+                    else
+                        state = -1;
+                }
+                default -> {
+                    state = -1;
+                }
+
             }
         }
-
         return state == 1;
     }
 
@@ -47,7 +47,6 @@ public class Lexer {
         } catch (IOException var3) {
             peek = '\uffff';
         }
-
     }
 
     public Token lexical_scan(BufferedReader br) {
@@ -126,6 +125,7 @@ public class Lexer {
 
                 System.err.println("Erroneous character after '=' : " + peek);
                 return null;
+
             case '>':
                 readch(br);
                 if (peek == '=') {
@@ -163,7 +163,7 @@ public class Lexer {
 
             default:
                 String s;
-                if (Character.isLetter(peek)) {
+                if (Character.isLetter(peek) || peek == '_') {
                     s = "" + peek;
                     readch(br);
 
@@ -213,7 +213,7 @@ public class Lexer {
                             peek = ' ';
                             yield Word.read;
                         }
-                        default -> (Token) (checkVar(s) ? new Word(257, s) : new Token(-1));
+                        default -> checkVar(s) ? new Word(257, s) : new Token(-1);
                     };
                 } else if (!Character.isDigit(peek)) {
                     System.err.println("Erroneous character: " + peek);
@@ -252,8 +252,8 @@ public class Lexer {
             } while(tok.tag != -1);
 
             br.close();
-        } catch (IOException var5) {
-            var5.printStackTrace();
+        } catch (IOException ioEXC) {
+            ioEXC.printStackTrace();
         }
 
     }
