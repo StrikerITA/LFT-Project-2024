@@ -1,0 +1,1 @@
+if (> x y) assign 0 to x else print (y)
