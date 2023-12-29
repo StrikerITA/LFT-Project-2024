@@ -4,6 +4,8 @@ import java.io.IOException;
 
 public class Lexer {
     public static int line = 1;
+    private boolean comOpen = false;
+    private boolean comment = false;
     private char peek = ' ';
 
     public Lexer() {}
@@ -53,6 +55,7 @@ public class Lexer {
         for(; peek == ' ' || peek == '\t' || peek == '\n' || peek == '\r'; readch(br)) {
             if (peek == '\n') {
                 ++line;
+                comment = false; //reset the flag before changing line
             }
         }
 
@@ -81,6 +84,7 @@ public class Lexer {
                 readch(br);
                 if (peek == '/'){
                     peek = ' ';
+                    comOpen = false;
                     return new Token(0);
                 }else{
                     return Token.mult;
@@ -100,9 +104,11 @@ public class Lexer {
                 readch(br);
                 if (peek == '*') {
                     peek = ' ';
+                    comOpen = true;
                     return new Token(0);
                 } else if (peek == '/') {
                     peek = ' ';
+                    comment = true;
                     return new Token(0);
                     // Todo: inizia a leggere dalla prossima riga
                     // boolean flag to tell if you see a comment you need to stop lexing the text
@@ -233,7 +239,18 @@ public class Lexer {
                             peek = ' ';
                             yield Word.read;
                         }
-                        default -> checkVar(s) ? new Word(257, s) : new Token(-1);
+                        default -> {
+                            if (comOpen || comment) { // it's a comment?
+                                //TODO: need to remove this return 0
+                                yield new Token(0);
+                            }else if (checkVar(s)){ //is a variable?
+                                yield new Word(257, s);
+                            }else { // no comments, no variable
+                                System.err.println("Erroneous character after '|' : " + peek);
+                                yield null;
+                            }
+
+                        }
                     };
                 } else if (!Character.isDigit(peek)) {
                     System.err.println("Erroneous character: " + peek);
