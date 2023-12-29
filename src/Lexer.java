@@ -60,6 +60,7 @@ public class Lexer {
             case '!':
                 peek = ' ';
                 return Token.not;
+
             case '&':
                 readch(br);
                 if (peek == '&') {
@@ -77,7 +78,14 @@ public class Lexer {
                 return Token.rpt;
             case '*':
                 peek = ' ';
-                return Token.mult;
+                readch(br);
+                if (peek == '/'){
+                    peek = ' ';
+                    return new Token(0);
+                }else{
+                    return Token.mult;
+                }
+
             case '+':
                 peek = ' ';
                 return Token.plus;
@@ -89,7 +97,19 @@ public class Lexer {
                 return Token.minus;
             case '/':
                 peek = ' ';
-                return Token.div;
+                readch(br);
+                if (peek == '*') {
+                    peek = ' ';
+                    return new Token(0);
+                } else if (peek == '/') {
+                    peek = ' ';
+                    return new Token(0);
+                    // Todo: inizia a leggere dalla prossima riga
+                    // boolean flag to tell if you see a comment you need to stop lexing the text
+                }else{
+                    return Token.div;
+                }
+
             case ':':
                 readch(br);
                 if (peek == '=') {
@@ -244,7 +264,6 @@ public class Lexer {
 
         try {
             BufferedReader br = new BufferedReader(new FileReader(path));
-
             Token tok;
             do {
                 tok = lex.lexical_scan(br);
