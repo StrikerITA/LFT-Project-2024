@@ -1,6 +1,7 @@
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
+import java.util.Objects;
 
 public class Lexer {
     public static int line = 1;
@@ -56,6 +57,10 @@ public class Lexer {
             if (peek == '\n') {
                 ++line;
                 comment = false; //reset the flag before changing line
+                if (comOpen){
+                    System.err.println("Comment not closed");
+                    return null;
+                }
             }
         }
 
@@ -106,12 +111,12 @@ public class Lexer {
                     peek = ' ';
                     comOpen = true;
                     return new Token(0);
+                    //tag 0 is not printed
                 } else if (peek == '/') {
                     peek = ' ';
                     comment = true;
                     return new Token(0);
-                    // Todo: inizia a leggere dalla prossima riga
-                    // boolean flag to tell if you see a comment you need to stop lexing the text
+                    //tag 0 is not printed
                 }else{
                     return Token.div;
                 }
@@ -179,7 +184,6 @@ public class Lexer {
 
                 System.err.println("Erroneous character after '|' : " + peek);
                 return null;
-
             case '}':
                 peek = ' ';
                 return Token.rpg;
@@ -241,7 +245,7 @@ public class Lexer {
                         }
                         default -> {
                             if (comOpen || comment) { // it's a comment?
-                                //TODO: need to remove this return 0
+                                //tag 0 is not printed
                                 yield new Token(0);
                             }else if (checkVar(s)){ //is a variable?
                                 yield new Word(257, s);
@@ -267,7 +271,7 @@ public class Lexer {
                     try {
                         int num = Integer.parseInt(s);
                         if (comOpen || comment) { // it's a comment?
-                            //TODO: need to remove this return 0
+                            //tag 0 is not printed
                             return new Token(0);
                         }else{ //is a variable?
                             return new NumberTok(256, num);
@@ -290,7 +294,9 @@ public class Lexer {
             Token tok;
             do {
                 tok = lex.lexical_scan(br);
-                System.out.println("Scan: " + tok);
+                if (tok.tag != 0){
+                    System.out.println("Scan: " + tok);
+                }
             } while(tok.tag != -1);
 
             br.close();
