@@ -87,12 +87,13 @@ public class Lexer {
             case '*':
                 peek = ' ';
                 readch(br);
-                if (peek == '/'){
+                if (peek == '/' && comOpen){
                     peek = ' ';
                     comOpen = false;
                     return new Token(0);
-                }else{
-                    return Token.mult;
+                }else if(peek == '/'){
+                    peek = ' ';
+                    return new Token(-2); // return token mult e div
                 }
 
             case '+':
@@ -295,7 +296,12 @@ public class Lexer {
             do {
                 tok = lex.lexical_scan(br);
                 if (tok.tag != 0){
-                    System.out.println("Scan: " + tok);
+                    if(tok.tag == -2){
+                        System.out.println("Scan: "+ Token.mult);
+                        System.out.println("Scan: " + Token.div);
+                    }else{
+                        System.out.println("Scan: " + tok);
+                    }
                 }
             } while(tok.tag != -1);
 
