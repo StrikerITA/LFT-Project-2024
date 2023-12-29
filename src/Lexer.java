@@ -246,7 +246,7 @@ public class Lexer {
                             }else if (checkVar(s)){ //is a variable?
                                 yield new Word(257, s);
                             }else { // no comments, no variable
-                                System.err.println("Erroneous character after '|' : " + peek);
+                                System.err.println("Erroneous character: " + peek);
                                 yield null;
                             }
 
@@ -266,7 +266,13 @@ public class Lexer {
 
                     try {
                         int num = Integer.parseInt(s);
-                        return new NumberTok(256, num);
+                        if (comOpen || comment) { // it's a comment?
+                            //TODO: need to remove this return 0
+                            return new Token(0);
+                        }else{ //is a variable?
+                            return new NumberTok(256, num);
+                        }
+
                     } catch (NumberFormatException var5) {
                         var5.printStackTrace();
                         return new NumberTok(-1, -1);

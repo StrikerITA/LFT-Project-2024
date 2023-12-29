@@ -19,9 +19,6 @@ public class Word extends Token {
     public static final Word le = new Word(258, "<=");
     public static final Word ne = new Word(258, "<>");
     public static final Word ge = new Word(258, ">=");
-    public static final Word singlecom = new Word(272, "//");
-    public static final Word startcom = new Word(272, "/*");
-    public static final Word endcom = new Word(272, "*/");
 
     public Word(int tag, String s) {
         super(tag);
