@@ -92,7 +92,10 @@ public class Lexer {
                 }else if(peek == '/'){
                     peek = ' ';
                     return new Token(-2); // return token mult e div
+                }else {
+                    return Token.mult;
                 }
+
 
             case '+':
                 peek = ' ';
