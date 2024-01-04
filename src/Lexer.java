@@ -9,8 +9,6 @@ public class Lexer {
     private boolean comment = false;
     private char peek = ' ';
 
-    public Lexer() {}
-
     private boolean checkVar(String s) {
         int state = 0;
         int i = 0;
@@ -124,8 +122,7 @@ public class Lexer {
 
             case ':':
                 readch(br);
-                if (peek == '=') {
-                    peek = ' ';
+                if (peek == '='){
                     return Word.init;
                 }
 
@@ -198,7 +195,7 @@ public class Lexer {
                     s = "" + peek;
                     readch(br);
 
-                    while(Character.isLetter(peek)) {
+                    while(Character.isLetter(peek) || peek == '_') {
                         s = s + peek;
                         readch(br);
                     }
@@ -245,16 +242,18 @@ public class Lexer {
                             yield Word.read;
                         }
                         default -> {
-                            if (comOpen || comment) { // it's a comment?
-                                //tag 0 is not printed
+                            if (comOpen || comment) {
+                                /* it's a comment?
+                                   tag 0 is not printed */
                                 yield new Token(0);
-                            }else if (checkVar(s)){ //is a variable?
-                                yield new Word(257, s);
-                            }else { // no comments, no variable
+                            }else if (checkVar(s)){
+                                //is a variable?
+                                yield new Word(Tag.ID, s);
+                            }else {
+                                // no comments, no variable
                                 System.err.println("Erroneous character: " + peek);
                                 yield null;
                             }
-
                         }
                     };
                 } else if (!Character.isDigit(peek)) {
@@ -271,16 +270,17 @@ public class Lexer {
 
                     try {
                         int num = Integer.parseInt(s);
-                        if (comOpen || comment) { // it's a comment?
+                        if (comOpen || comment) {
+                            // it's a comment?
                             //tag 0 is not printed
                             return new Token(0);
-                        }else{ //is a variable?
+                        }else{ //is a num?
                             return new NumberTok(256, num);
                         }
 
                     } catch (NumberFormatException var5) {
                         var5.printStackTrace();
-                        return new NumberTok(-1, -1);
+                        return new Token(Tag.EOF);
                     }
                 }
         }
@@ -294,9 +294,9 @@ public class Lexer {
             BufferedReader br = new BufferedReader(new FileReader(path));
             Token tok;
             do {
-                tok = lex.lexical_scan(br);
-                if (tok.tag != 0){
-                    if(tok.tag == -2){
+                tok = lex.lexical_scan(br); // take token
+                if (tok.tag != 0){ // is a comment?
+                    if(tok.tag == -2){ // is a */ or not ?
                         System.out.println("Scan: "+ Token.mult);
                         System.out.println("Scan: " + Token.div);
                     }else{
