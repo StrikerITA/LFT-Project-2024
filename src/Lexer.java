@@ -96,7 +96,6 @@ public class Lexer {
                     return Token.mult;
                 }
 
-
             case '+':
                 peek = ' ';
                 return Token.plus;
@@ -126,6 +125,7 @@ public class Lexer {
             case ':':
                 readch(br);
                 if (peek == '='){
+                    peek = ' ';
                     return Word.init;
                 }
 
@@ -145,7 +145,6 @@ public class Lexer {
                         return Word.ne;
                     }
 
-                    peek = ' ';
                     return Word.lt;
                 }
             case '=':
@@ -165,7 +164,6 @@ public class Lexer {
                     return Word.ge;
                 }
 
-                peek = ' ';
                 return Word.gt;
             case '[':
                 peek = ' ';
@@ -198,50 +196,40 @@ public class Lexer {
                     s = "" + peek;
                     readch(br);
 
-                    while(Character.isLetter(peek) || peek == '_') {
+                    while(Character.isLetter(peek) || peek == '_' || Character.isDigit(peek)) {
                         s = s + peek;
                         readch(br);
                     }
 
                     return switch (s) {
                         case "assign" -> {
-                            peek = ' ';
                             yield Word.assign;
                         }
                         case "to" -> {
-                            peek = ' ';
                             yield Word.to;
                         }
                         case "if" -> {
-                            peek = ' ';
                             yield Word.iftok;
                         }
                         case "else" -> {
-                            peek = ' ';
                             yield Word.elsetok;
                         }
                         case "do" -> {
-                            peek = ' ';
                             yield Word.dotok;
                         }
                         case "for" -> {
-                            peek = ' ';
                             yield Word.fortok;
                         }
                         case "begin" -> {
-                            peek = ' ';
                             yield Word.begin;
                         }
                         case "end" -> {
-                            peek = ' ';
                             yield Word.end;
                         }
                         case "print" -> {
-                            peek = ' ';
                             yield Word.print;
                         }
                         case "read" -> {
-                            peek = ' ';
                             yield Word.read;
                         }
                         default -> {
