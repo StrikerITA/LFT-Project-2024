@@ -84,17 +84,7 @@ public class Lexer {
                 return Token.rpt;
             case '*':
                 peek = ' ';
-                readch(br);
-                if (peek == '/' && comOpen){
-                    peek = ' ';
-                    comOpen = false;
-                    return new Token(0);
-                }else if(peek == '/'){
-                    peek = ' ';
-                    return new Token(-2); // return token mult e div
-                }else {
-                    return Token.mult;
-                }
+                return Token.mult;
 
             case '+':
                 peek = ' ';
@@ -106,20 +96,37 @@ public class Lexer {
                 peek = ' ';
                 return Token.minus;
             case '/':
-                peek = ' ';
                 readch(br);
                 if (peek == '*') {
                     peek = ' ';
                     comOpen = true;
-                    return new Token(0);
-                    //tag 0 is not printed
+                    while(comOpen){
+                        readch(br);
+                        if (peek == '*'){
+                            readch(br);
+                            if (peek == '/'){
+                                peek = ' ';
+                                comOpen = false;
+                            } else if (peek == (char) -1) {
+                                break;
+                            }
+                        } else if (peek == (char) -1) {
+                            break;
+                        }
+                    }
+                    return lexical_scan(br);
                 } else if (peek == '/') {
                     peek = ' ';
                     comment = true;
-                    return new Token(0);
-                    //tag 0 is not printed
+                    return lexical_scan(br);
                 }else{
-                    return Token.div;
+                    if (comOpen || comment){
+                        System.err.println("Comment not closed");
+                        return null;
+                    }else {
+                        return Token.div;
+                    }
+
                 }
 
             case ':':
@@ -236,7 +243,7 @@ public class Lexer {
                             if (comOpen || comment) {
                                 /* it's a comment?
                                    tag 0 is not printed */
-                                yield new Token(0);
+                                yield lexical_scan(br);
                             }else if (checkVar(s)){
                                 //is a variable?
                                 yield new Word(Tag.ID, s);
@@ -263,8 +270,8 @@ public class Lexer {
                         int num = Integer.parseInt(s);
                         if (comOpen || comment) {
                             // it's a comment?
-                            //tag 0 is not printed
-                            return new Token(0);
+
+                            return lexical_scan(br);
                         }else{ //is a num?
                             return new NumberTok(256, num);
                         }
