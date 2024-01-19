@@ -270,7 +270,7 @@ public class Lexer {
                         int num = Integer.parseInt(s);
                         if (comOpen || comment) {
                             // it's a comment?
-
+                            
                             return lexical_scan(br);
                         }else{ //is a num?
                             return new NumberTok(256, num);

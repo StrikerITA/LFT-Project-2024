@@ -1,0 +1,39 @@
+<prog > ::= <statlist > EOF
+
+<statlist > ::= <stat > <statlistp >
+
+<statlistp > ::= ; <stat > <statlistp > | ε
+
+<stat > ::= assign <assignlist >
+        	|   print ( <exprlist > )
+        	|   read ( <idlist> )
+        	|   for ( <forp> ) do <stat>
+        	|   if ( <bexpr > ) <stat > <ifp > end
+         	|    { <statlist > }
+
+<forp > ::=  ID := <expr> ; <bexpr>
+            | <bexpr >
+
+<ifp>    ::=  else <stat > | ε
+
+<assignlist > ::= [ <expr> to <idlist> ] <assignlistp>
+
+<assignlistp > ::= [ <expr> to <idlist> ] <assignlistp> | ε
+
+<idlist > :: = ID <idlistp>
+
+<idlistp > ::=  ,  ID <idlistp> | ε
+
+<bexpr > ::= RELOP <expr > <expr >
+
+<expr > ::=  + ( <exprlist> )
+			| - <expr> <expr>
+            | * ( <exprlist> )
+			| / <expr> <expr>
+          	| NUM
+			| ID
+
+<exprlist > ::= <expr> <exprlistp >
+
+<exprlistp > ::= , <expr > <exprlistp > | ε
+
