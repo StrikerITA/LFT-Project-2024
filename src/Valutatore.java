@@ -101,7 +101,7 @@ public class Valutatore {
         switch (look.tag) {
             case '*':
                 move();
-                termp_k = fact() * i;
+                termp_k = i * fact();
                 if (look.tag == '*' || look.tag == '/') {
                     termp_k = termp(termp_k);
                 }
@@ -109,7 +109,7 @@ public class Valutatore {
 
             case '/':
                 move();
-                termp_k = fact() / i;
+                termp_k = i / fact();
                 if (look.tag == '*' || look.tag == '/') {
                     termp_k = termp(termp_k);
                 }
@@ -127,7 +127,7 @@ public class Valutatore {
         int fact = 0;
         switch (look.tag) {
             case Tag.NUM: { // NUM
-                fact = extractNumber(look.toString());
+                fact = ((NumberTok)look).lex;
                 move();
                 break;
             }
@@ -161,22 +161,6 @@ public class Valutatore {
         }
 
         return fact;
-    }
-
-    public static int extractNumber(String input) {
-        // Pattern regex per estrarre il numero dalle parentesi <>
-        Pattern pattern = Pattern.compile("<\\d+,\\s*(\\d+)>");
-
-        // Applica il pattern alla stringa
-        Matcher matcher = pattern.matcher(input);
-
-        // se il pattern corrisponde, estrai il numero
-        if (matcher.matches()) {
-            // Gruppo 1 contiene il numero
-            return Integer.parseInt(matcher.group(1));
-        } else {
-            return -1;
-        }
     }
 
     public static void main(String[] args) {
