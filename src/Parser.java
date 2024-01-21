@@ -170,35 +170,35 @@ public class Parser {
     }
 
     private void assignlistp() {
-        if (look.tag == '[') {
-            move();
-            expr();
-            if (look.tag == Tag.TO) {
-                move();
+        switch (look.tag){
+            case '[':{
+                match(Token.lpq.tag);
+                expr();
+                match(Tag.TO);
                 idlist();
-                if (look.tag == Token.rpq.tag) {
-                    move();
-                    assignlistp();
-                } else {
-                    error("Close bracket missing");
-                }
+                match(Token.rpq.tag);
+                assignlistp();
             }
+            case ';':
+            case '}':
+            case Tag.END:
+            case Tag.ELSE:
+            case Tag.EOF:
+                break;
+            default:
+                error("Error in assignlistp");
         }
     }
 
     private void assignlist() {
-        move();
-        expr();
-        if (look.tag == Tag.TO) {
-            move();
+        if (look.tag == Token.lpq.tag){
+            match(Token.lpq.tag);
+            expr();
+            match(Tag.TO);
             idlist();
-            if (look.tag == Token.rpq.tag) {
-                move();
-                assignlistp();
-            } else {
-                error("Close bracket missing");
-            }
-        }else {
+            match(Token.rpq.tag);
+            assignlistp();
+        } else {
             error("Error assignList");
         }
     }
@@ -209,12 +209,16 @@ public class Parser {
     }
 
     private void idlistp() {
-        if (look.tag == ',') {
-            move();
-            if (look.tag == Tag.ID) {
+        switch (look.tag){
+            case ',':
                 move();
+                match(Tag.ID);
                 idlistp();
-            }
+                break;
+            case ')':
+            case ']':
+            default:
+                break;
         }
     }
 
@@ -257,7 +261,6 @@ public class Parser {
     }
     
     private void expr() {
-        // look.tag != '+' && look.tag != '-' && look.tag != '*' && look.tag != '/'
         switch (look.tag){
             case '+' -> {
                 match(Token.plus.tag);
@@ -289,7 +292,6 @@ public class Parser {
             }
             default -> error("Error in expr");
         }
-
     }
 
     public static void main (String[]args){
