@@ -102,6 +102,7 @@ public class Translator {
                     match(Token.rpt.tag);
                     code.emitLabel(label_true);
                     stat(lnext_prog);
+                    code.emit(OpCode.GOto, lnext_prog);
                     ifp(label_false);
                     match(Tag.END);
                 } else {
