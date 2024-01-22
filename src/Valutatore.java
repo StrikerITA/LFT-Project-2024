@@ -1,6 +1,8 @@
+import library.NumberTok;
+import library.Tag;
+import library.Token;
+
 import java.io.*;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 public class Valutatore {
     private final Lexer lex;

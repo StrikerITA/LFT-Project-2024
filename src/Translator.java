@@ -1,3 +1,5 @@
+import library.*;
+
 import java.io.*;
 
 public class Translator {
@@ -223,7 +225,7 @@ public class Translator {
                 int id_addr = st.lookupAddress(((Word) look).lexeme); // <ID, var> -> return Address(var)
                 if (id_addr == -1) { // address not found
                     id_addr = count;
-                    st.insert(((Word) look).lexeme, count++); // create new addr in a SymbolTable
+                    st.insert(((Word) look).lexeme, count++); // create new addr in a library.SymbolTable
                 }
                 match(Tag.ID);
                 match(Tag.INIT);
@@ -252,7 +254,7 @@ public class Translator {
             int id_addr = st.lookupAddress(((Word) look).lexeme); // <ID, var> -> return Address(var)
             if (id_addr == -1) { // address not found
                 id_addr = count;
-                st.insert(((Word) look).lexeme, count++); // create new addr in a SymbolTable
+                st.insert(((Word) look).lexeme, count++); // create new addr in a library.SymbolTable
             }
             match(Tag.ID);
             // if tag = , ID <idlistp> allora dup
@@ -278,7 +280,7 @@ public class Translator {
                 int id_addr = st.lookupAddress(((Word) look).lexeme); // <ID, var> -> return Address(var)
                 if (id_addr == -1) { // address not found
                     id_addr = count;
-                    st.insert(((Word) look).lexeme, count++); // create new addr in a SymbolTable
+                    st.insert(((Word) look).lexeme, count++); // create new addr in a library.SymbolTable
                 }
                 match(Tag.ID);
                 // if tag = , ID <idlistp> allora dup
@@ -372,7 +374,7 @@ public class Translator {
                 int id_addr = st.lookupAddress(((Word) look).lexeme); // <ID, var> -> return Address(var)
                 if (id_addr == -1) { // address not found
                     id_addr = count;
-                    st.insert(((Word) look).lexeme, count++); // create new addr in a SymbolTable
+                    st.insert(((Word) look).lexeme, count++); // create new addr in a library.SymbolTable
                 }
                 code.emit(OpCode.iload, id_addr);
                 match(Tag.ID);

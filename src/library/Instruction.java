@@ -1,3 +1,5 @@
+package library;
+
 public class Instruction {
     OpCode opCode;
     int operand;

@@ -1,3 +1,5 @@
+package library;
+
 public class Word extends Token {
     public String lexeme = "";
     public static final Word assign = new Word(259, "assign");

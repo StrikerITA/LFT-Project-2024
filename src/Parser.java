@@ -1,3 +1,6 @@
+import library.Tag;
+import library.Token;
+
 import java.io.*;
 public class Parser {
     private Lexer lex;

@@ -1,7 +1,11 @@
+import library.NumberTok;
+import library.Tag;
+import library.Token;
+import library.Word;
+
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
-import java.util.Objects;
 
 public class Lexer {
     public static int line = 1;

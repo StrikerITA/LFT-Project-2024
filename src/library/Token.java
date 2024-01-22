@@ -1,3 +1,5 @@
+package library;
+
 public class Token {
     public final int tag;
     public static final Token not = new Token(33);
