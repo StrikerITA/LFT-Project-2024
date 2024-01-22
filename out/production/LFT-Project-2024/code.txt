@@ -1,2 +1,7 @@
-read(a);
-print(+(a,1))
+assign [5 to b ];
+for(a := 6; > a b)
+do{
+    print(1);
+    assign[2 to a]
+};
+print(2)

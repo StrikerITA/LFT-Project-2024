@@ -34,7 +34,7 @@ public class Translator {
     }
 
     public void prog() {
-        if (look.tag != Tag.RELOP && look.tag != ')' && look.tag != ']' && look.tag != '}' && look.tag != ';' && look.tag!=',' && look.tag != Tag.NUM && look.tag != Tag.ID) {
+        if (look.tag==Tag.ASSIGN || look.tag==Tag.PRINT || look.tag==Tag.READ || look.tag==Tag.FOR ||look.tag==Tag.IF || look.tag=='{') {
             int lnext_prog = code.newLabel();
             statlist(lnext_prog);
             code.emitLabel(lnext_prog);
@@ -50,12 +50,13 @@ public class Translator {
     }
 
     public void stat(int lnext_prog) {
+        int label_true, label_false;
         switch(look.tag) {
             case Tag.READ: {
                 match(Tag.READ);
                 code.emit(OpCode.invokestatic, 0);
                 match('(');
-                idlist(false);
+                idlist();
                 match(')');
                 break;
             }
@@ -66,40 +67,51 @@ public class Translator {
             }
             case Tag.PRINT: {
                 match(Tag.PRINT);
-                code.emit(OpCode.invokestatic, 1);
                 match(Token.lpt.tag); // aperta tonda
                 exprlist();
                 match(Token.rpt.tag); // tonda chiusa
+                code.emit(OpCode.invokestatic, 1);
                 break;
             }
             case Tag.FOR:{
-                move();
+                match(Tag.FOR);
                 match(Token.lpt.tag); // bracket open
-                forp();
+
+                int label = code.newLabel();
+                label_true = code.newLabel();
+                label_false = code.newLabel();
+                forp(label, label_true, label_false);
+
+                match(Token.rpt.tag);
                 match(Tag.DO);
+                code.emitLabel(label_true);
                 stat(lnext_prog);
-                move();
+                code.emit(OpCode.GOto, label);
+                code.emitLabel(label_false);
                 break;
             }
             case Tag.IF:{
-                move();
+                match(Tag.IF);
                 match(Token.lpt.tag);
-                bexpr(); // 5<3
+                label_true = code.newLabel();
+                label_false = code.newLabel();
+                bexpr(label_true, label_false); // 5<3
                 if (look.tag == Token.rpt.tag) { // )
-                    move();
+                    match(Token.rpt.tag);
+                    code.emitLabel(label_true);
                     stat(lnext_prog);
-                    ifp(lnext_prog);
-                    if (look.tag == Tag.END){
-                        move();
-                    }
+                    ifp(label_false);
+                    match(Tag.END);
                 } else {
                     error("Close bracket missing");
                 }
                 break;
             }
             case '{': {
-                move();
-                statlist(lnext_prog);
+                match(Token.lpg.tag);
+                int nextl = code.newLabel();
+                statlist(nextl);
+                code.emitLabel(nextl);
                 if (look.tag == '}') {
                     move();
                     break;
@@ -109,33 +121,55 @@ public class Translator {
                 break;
             }
             default:{
+                error("Error in stat");
                 break;
             }
         }
     }
 
     private void statlist(int lnext_prog) {
-        stat(lnext_prog);
-        statlistp(lnext_prog);
+        if(look.tag==Tag.ASSIGN || look.tag==Tag.PRINT || look.tag==Tag.READ || look.tag==Tag.FOR ||look.tag==Tag.IF || look.tag=='{') {
+            int lnext = code.newLabel();
+            stat(lnext);
+
+            code.emit(OpCode.GOto, lnext); // GOTO label
+            code.emitLabel(lnext); // Lx
+            statlistp(lnext_prog);
+            code.emit(OpCode.GOto, lnext_prog);
+        }else{
+            error("Error in statlist");
+        }
     }
 
     private void statlistp(int lnext_prog) {
         switch (look.tag){
             case ';':
                 match(Token.semicolon.tag);
-                code.emit(OpCode.GOto, lnext_prog);
-                stat(lnext_prog);
+                int lnext = code.newLabel();
+                stat(lnext);
+                code.emit(OpCode.GOto,lnext);
+                code.emitLabel(lnext);
                 statlistp(lnext_prog);
                 break;
-            case ')':
-            case ']':
             case '}':
-            case ',':
             case -1:
                 break;
             default:
                 error("Error in statlistp");
                 break;
+        }
+    }
+
+    private void assignlist() {
+        if (look.tag == Token.lpq.tag){
+            match(Token.lpq.tag);
+            expr();
+            match(Tag.TO);
+            idlist();
+            match(Token.rpq.tag);
+            assignlistp();
+        } else {
+            error("Error assignList");
         }
     }
 
@@ -145,7 +179,7 @@ public class Translator {
                 match(Token.lpq.tag);
                 expr();
                 match(Tag.TO);
-                idlist(true);
+                idlist();
                 match(Token.rpq.tag);
                 assignlistp();
             }
@@ -160,50 +194,59 @@ public class Translator {
         }
     }
 
-    private void assignlist() {
-        if (look.tag == Token.lpq.tag){
-            match(Token.lpq.tag);
-            expr();
-            match(Tag.TO);
-            idlist(true);
-            match(Token.rpq.tag);
-            assignlistp();
-        } else {
-            error("Error assignList");
-        }
-    }
-
-    private void ifp(int lnext_prog){
+    private void ifp(int lnext_false){
         switch (look.tag){
-            case Tag.ELSE -> {
+            case Tag.ELSE: {
                 move();
-                stat(lnext_prog);
+                code.emitLabel(lnext_false);
+                stat(lnext_false);
+                break;
             }
-            case ')'-> {}
-            default -> error("Error in IFP");
+            case Tag.ASSIGN:
+            case Tag.PRINT:
+            case Tag.READ:
+            case Tag.FOR:
+            case Tag.IF:
+            case '{':
+            case Tag.END:
+                break;
+            default: {
+                error("Error in IFP");
+                break;
+            }
         }
     }
 
-    private void forp(){
+    private void forp(int label, int label_true, int label_false){
         switch (look.tag){
             case Tag.ID -> {
+                int id_addr = st.lookupAddress(((Word) look).lexeme); // <ID, var> -> return Address(var)
+                if (id_addr == -1) { // address not found
+                    id_addr = count;
+                    st.insert(((Word) look).lexeme, count++); // create new addr in a SymbolTable
+                }
                 match(Tag.ID);
                 match(Tag.INIT);
                 expr();
-                match(Token.semicolon.tag);
-                bexpr();
-                match(Token.rpt.tag); // bracket closed ?
+
+                code.emit(OpCode.istore, id_addr);
+                match(Token.semicolon.tag); //; of a := 6;
+
+                code.emit(OpCode.GOto, label); //for label
+                code.emitLabel(label);
+                bexpr(label_true, label_false);
             }
             case Tag.RELOP -> {
-                bexpr();
-                match(Token.rpt.tag); // bracket closed ?
+                code.emit(OpCode.GOto, label);
+                code.emitLabel(label);
+                bexpr(label_true, label_false);
             }
             default -> error("Error in FORP");
         }
 
     }
 
-    private void idlist(boolean cmd) {
+    private void idlist() {
         // use cmd to call assign or read
         if (look.tag == Tag.ID) {
             int id_addr = st.lookupAddress(((Word) look).lexeme); // <ID, var> -> return Address(var)
@@ -215,8 +258,11 @@ public class Translator {
             // if tag = , ID <idlistp> allora dup
             if (look.tag == Token.comma.tag) {
                 code.emit(OpCode.dup);
+                code.emit(OpCode.istore, id_addr);
+                code.emit(OpCode.pop);
+            }else {
+                code.emit(OpCode.istore, id_addr); // save val in id_addr
             }
-            code.emit(OpCode.istore, id_addr); // save val in id_addr
             idlistp();
         }else{
             error("Error in idlist");
@@ -228,6 +274,22 @@ public class Translator {
         switch (look.tag){
             case ',':
                 move();
+
+                int id_addr = st.lookupAddress(((Word) look).lexeme); // <ID, var> -> return Address(var)
+                if (id_addr == -1) { // address not found
+                    id_addr = count;
+                    st.insert(((Word) look).lexeme, count++); // create new addr in a SymbolTable
+                }
+                match(Tag.ID);
+                // if tag = , ID <idlistp> allora dup
+                if (look.tag == Token.comma.tag) {
+                    code.emit(OpCode.dup);
+                    code.emit(OpCode.istore, id_addr);
+                    code.emit(OpCode.pop);
+                }else {
+                    code.emit(OpCode.istore, id_addr); // save val in id_addr
+                }
+
                 match(Tag.ID);
                 idlistp();
                 break;
@@ -238,10 +300,40 @@ public class Translator {
         }
     }
 
-    private void bexpr() {
+    private void bexpr(int label_true, int label_false) {
+        String op =((Word) look).lexeme;
         match(Tag.RELOP);
         expr();
         expr();
+        switch (op){
+            case "<":{
+                code.emit(OpCode.if_icmplt, label_true);
+                break;
+            }
+            case ">":{
+                //code.emitLabel(code.label);
+                code.emit(OpCode.if_icmpgt, label_true);
+                break;
+            }
+            case "<=":{
+                code.emit(OpCode.if_icmple, label_true);
+                break;
+            }
+            case ">=":{
+                code.emit(OpCode.if_icmpge, label_true);
+                break;
+            }
+            case "<>":{
+                code.emit(OpCode.if_icmpne, label_true);
+                break;
+            }
+            case "==":{
+                code.emit(OpCode.if_icmpeq, label_true);
+                break;
+            }
+            default: error("Error in BEXPR");
+        }
+        code.emit(OpCode.GOto, label_false);
     }
 
     private void expr() {
@@ -250,11 +342,11 @@ public class Translator {
                 match(Token.plus.tag);
                 match(Token.lpt.tag);
                 exprlist();
-                match(Token.rpt.tag);
                 code.emit(OpCode.iadd);
+                match(Token.rpt.tag);
             }
             case '-' -> {
-                match(Token.minus.tag);
+                match(Token.lpt.tag);
                 expr();
                 expr();
                 code.emit(OpCode.isub);
@@ -263,8 +355,8 @@ public class Translator {
                 match(Token.mult.tag);
                 match(Token.lpt.tag);
                 exprlist();
-                match(Token.rpt.tag);
                 code.emit(OpCode.imul);
+                match(Token.rpt.tag);
             }
             case '/' -> {
                 match(Token.div.tag);
@@ -273,9 +365,16 @@ public class Translator {
                 code.emit(OpCode.idiv);
             }
             case Tag.NUM -> {
+                code.emit(OpCode.ldc, ((NumberTok)look).lex);
                 match(Tag.NUM);
             }
             case Tag.ID -> {
+                int id_addr = st.lookupAddress(((Word) look).lexeme); // <ID, var> -> return Address(var)
+                if (id_addr == -1) { // address not found
+                    id_addr = count;
+                    st.insert(((Word) look).lexeme, count++); // create new addr in a SymbolTable
+                }
+                code.emit(OpCode.iload, id_addr);
                 match(Tag.ID);
             }
             default -> error("Error in expr");
