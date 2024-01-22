@@ -6,7 +6,7 @@ public class Translator {
     private Lexer lex;
     private BufferedReader pbr;
     private Token look;
-    
+
     SymbolTable st = new SymbolTable();
     CodeGenerator code = new CodeGenerator();
     int count=0;
@@ -276,7 +276,6 @@ public class Translator {
         switch (look.tag){
             case ',':
                 move();
-
                 int id_addr = st.lookupAddress(((Word) look).lexeme); // <ID, var> -> return Address(var)
                 if (id_addr == -1) { // address not found
                     id_addr = count;
@@ -348,7 +347,7 @@ public class Translator {
                 match(Token.rpt.tag);
             }
             case '-' -> {
-                match(Token.lpt.tag);
+                match(Token.minus.tag);
                 expr();
                 expr();
                 code.emit(OpCode.isub);
