@@ -9,7 +9,7 @@
         	|   read ( <idlist> )
         	|   for ( <forp> ) do <stat>
         	|   if ( <bexpr > ) <stat > <ifp > end
-         	|    { <statlist > }
+         	|   { <statlist > }
 
 <forp > ::=  ID := <expr> ; <bexpr>
             | <bexpr >
