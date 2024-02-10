@@ -1,0 +1,16 @@
+<start > ::= <expr > { print(expr .val ) } EOF
+
+<expr > ::= <term> { exprp.i = term.val } <exprp> { expr.val = exprp.val }
+
+<exprp > ::=  + <term> { exprp1.i = exprp.i + term.val } <exprp1> { exprp.val = exprp1.val }
+            | - <term> { exprp1.i = exprp.i − term.val } <exprp1> { exprp.val = exprp1.val }
+            | ε { exprp .val = exprp .i }
+
+<term > ::= <fact> { termp.i = fact.val } <termp> { term.val = termp.val }
+
+<termp > ::= * <fact> { termp1.i = termp.i ∗ fact.val } <termp1> { termp.val = termp1.val }
+            | / <fact> { termp1.i = termp.i/fact.val } <termp1> { termp.val = termp1.val }
+            | ε { termp .val = termp .i }
+
+<fact > ::= ( <expr> ) { fact.val = expr.val }
+            | NUM { fact.val = NUM.value }

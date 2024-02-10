@@ -1,7 +1,12 @@
-assign [5 to b ];
-for(a := 6; > a b)
+assign [+(2,3) to var1, var2, var3][2 to var2];
+read(var1, var2);
+for(var1 := 53; > 4 var2)
 do{
-    print(1);
-    assign[2 to a]
+    if(< 5 var2){
+        print(var2)
+    }
+    else
+        read(var2)
+    end
 };
-print(2)
+print( +(2,3),(49))

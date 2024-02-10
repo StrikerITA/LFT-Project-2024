@@ -3,8 +3,8 @@ import library.*;
 import java.io.*;
 
 public class Translator {
-    private Lexer lex;
-    private BufferedReader pbr;
+    private final Lexer lex;
+    private final BufferedReader pbr;
     private Token look;
 
     SymbolTable st = new SymbolTable();
@@ -56,9 +56,9 @@ public class Translator {
         switch(look.tag) {
             case Tag.READ: {
                 match(Tag.READ);
-                code.emit(OpCode.invokestatic, 0);
+                //code.emit(OpCode.invokestatic, 0);
                 match('(');
-                idlist();
+                idlist(false);
                 match(')');
                 break;
             }
@@ -168,7 +168,8 @@ public class Translator {
             match(Token.lpq.tag);
             expr();
             match(Tag.TO);
-            idlist();
+            idlist(true);
+            //code.emit(OpCode.pop);
             match(Token.rpq.tag);
             assignlistp();
         } else {
@@ -182,9 +183,11 @@ public class Translator {
                 match(Token.lpq.tag);
                 expr();
                 match(Tag.TO);
-                idlist();
+                idlist(true);
+                //code.emit(OpCode.pop);
                 match(Token.rpq.tag);
                 assignlistp();
+                break;
             }
             case ';':
             case '}':
@@ -249,8 +252,8 @@ public class Translator {
 
     }
 
-    private void idlist() {
-        // use cmd to call assign or read
+    private void idlist(boolean isAssign) {
+        // use cmd to call a dup
         if (look.tag == Tag.ID) {
             int id_addr = st.lookupAddress(((Word) look).lexeme); // <ID, var> -> return Address(var)
             if (id_addr == -1) { // address not found
@@ -259,24 +262,28 @@ public class Translator {
             }
             match(Tag.ID);
             // if tag = , ID <idlistp> allora dup
-            if (look.tag == Token.comma.tag) {
+            if (look.tag == Token.comma.tag && isAssign) {
                 code.emit(OpCode.dup);
                 code.emit(OpCode.istore, id_addr);
-                code.emit(OpCode.pop);
-            }else {
+            } else {
+                //if you are in this case, you are using a READ
+                if (!isAssign) {
+                    code.emit(OpCode.invokestatic, 0);
+                }
                 code.emit(OpCode.istore, id_addr); // save val in id_addr
+                isAssign = false; // set assign to false
             }
-            idlistp();
+            idlistp(isAssign);
         }else{
             error("Error in idlist");
         }
 
     }
 
-    private void idlistp() {
+    private void idlistp(boolean isAssign) {
         switch (look.tag){
             case ',':
-                move();
+                match(Token.comma.tag);
                 int id_addr = st.lookupAddress(((Word) look).lexeme); // <ID, var> -> return Address(var)
                 if (id_addr == -1) { // address not found
                     id_addr = count;
@@ -284,16 +291,16 @@ public class Translator {
                 }
                 match(Tag.ID);
                 // if tag = , ID <idlistp> allora dup
-                if (look.tag == Token.comma.tag) {
+                if (look.tag == Token.comma.tag && isAssign) { //if cmd = true and var1, var2, varN...
                     code.emit(OpCode.dup);
                     code.emit(OpCode.istore, id_addr);
-                    code.emit(OpCode.pop);
-                }else {
-                    code.emit(OpCode.istore, id_addr); // save val in id_addr
+                    idlistp(isAssign);
+                } else {
+                    if (!isAssign) {
+                        code.emit(OpCode.invokestatic, 0);
+                    }
+                    code.emit(OpCode.istore, id_addr);
                 }
-
-                match(Tag.ID);
-                idlistp();
                 break;
             case ')':
             case ']':
@@ -391,7 +398,7 @@ public class Translator {
             case '/':
             case Tag.NUM:
             case Tag.ID:
-                expr();
+                expr(); // TODO: fare print(1+2)
                 exprlistp();
                 break;
             default:
@@ -404,8 +411,15 @@ public class Translator {
         switch (look.tag){
             case ',':
                 match(Token.comma.tag);
-                expr();
-                exprlistp();
+                if (look.tag == Token.lpt.tag){
+                    match(Token.lpt.tag);
+                    expr();
+                    exprlistp();
+                    match(Token.rpt.tag);
+                }else {
+                    expr();
+                    exprlistp();
+                }
                 break;
             case ')':
                 break;
