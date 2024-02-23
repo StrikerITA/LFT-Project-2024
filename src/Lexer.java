@@ -9,7 +9,6 @@ import java.io.IOException;
 
 public class Lexer {
     public static int line = 1;
-    private boolean comOpen = false;
     private boolean comment = false;
     private char peek = ' ';
 
@@ -17,40 +16,64 @@ public class Lexer {
         int state = 0;
         int i = 0;
 
-        while (state != 1 && i < s.length()) {
+        while (state >= 0 && i < s.length()) {
             final char ch = s.charAt(i++);
 
             switch (state) {
                 case 0 -> {
-                    if (ch == '_')
-                        state = 2;
-                    else if ((ch>='a' && ch<='z') || (ch>='A' && ch<='Z'))
+                    if (Character.isDigit(ch)){
                         state = 1;
-                    else
+                    }else if (ch == '_'){
+                        state = 3;
+                    } else if ((ch>='a' && ch<='z') || (ch>='A' && ch<='Z')){
+                        state = 2;
+                    } else{
                         state = -1; //pozzo
+                    }
+                }
+                case 1 -> { //stato pozzo
+                    if (Character.isDigit(ch)){
+                        state = 1;
+                    } else if ((ch>='a' && ch<='z') || (ch>='A' && ch<='Z')) {
+                        state = 1;
+                    }else if (ch == '_'){
+                        state = 1;
+                    } else{
+                        state = -1;
+                    }
                 }
                 case 2 -> {
-                    if (ch == '_')
+                    if (Character.isDigit(ch)){
                         state = 2;
-                    else if ((ch>='a' && ch<='z') || (ch>='A' && ch<='Z'))
-                        state = 1;
+                    } else if (ch == '_') {
+                        state = 2;
+                    } else if ((ch>='a' && ch<='z') || (ch>='A' && ch<='Z')) {
+                        state = 2;
+                    } else {
+                        state = -1;
+                    }
+                }
+                case 3 -> {
+                    if (Character.isDigit(ch))
+                        state = 2;
+                    else if ((ch >= 97 && ch <= 122) || (ch >= 65 && ch <= 90))
+                        state = 2;
+                    else if (ch == '_')
+                        state = 3;
                     else
                         state = -1;
-                }
-                default -> {
-                    state = -1;
                 }
 
             }
         }
-        return state == 1;
+        return state == 2;
     }
 
     private void readch(BufferedReader br) {
         try {
             peek = (char)br.read();
         } catch (IOException var3) {
-            peek = '\uffff';
+            peek = (char) -1;
         }
     }
 
@@ -58,11 +81,6 @@ public class Lexer {
         for(; peek == ' ' || peek == '\t' || peek == '\n' || peek == '\r'; readch(br)) {
             if (peek == '\n') {
                 ++line;
-                comment = false; //reset the flag before changing line
-                if (comOpen){
-                    System.err.println("Comment not closed");
-                    return null;
-                }
             }
         }
 
@@ -101,36 +119,32 @@ public class Lexer {
                 return Token.minus;
             case '/':
                 readch(br);
-                if (peek == '*') {
-                    peek = ' ';
-                    comOpen = true;
-                    while(comOpen){
-                        readch(br);
-                        if (peek == '*'){
+                if(Character.isLetterOrDigit(peek)){
+                    return Token.div;
+                }
+                else {
+                    if(peek == '/'){
+                        while(peek != '\n' && peek != (char)-1){
                             readch(br);
-                            if (peek == '/'){
-                                peek = ' ';
-                                comOpen = false;
-                            } else if (peek == (char) -1) {
-                                break;
-                            }
-                        } else if (peek == (char) -1) {
-                            break;
                         }
-                    }
-                    return lexical_scan(br);
-                } else if (peek == '/') {
-                    peek = ' ';
-                    comment = true;
-                    return lexical_scan(br);
-                }else{
-                    if (comOpen || comment){
-                        System.err.println("Comment not closed");
+                    } else if(peek == '*'){
+                        do {
+                            do {
+                                readch(br);
+                            }
+                            while(peek!='*');
+                            readch(br);
+                            while(peek == '*'){
+                                readch(br);
+                            }
+                        }
+                        while(peek != '/');
+                    } else {
+                        System.err.println("Error, comment was not closed before end of file");
                         return null;
-                    }else {
-                        return Token.div;
                     }
-
+                    readch(br);
+                    return lexical_scan(br);
                 }
 
             case ':':
@@ -203,87 +217,57 @@ public class Lexer {
 
             default:
                 String s;
-                if (Character.isLetter(peek) || peek == '_') {
-                    s = "" + peek;
-                    readch(br);
+                if (Character.isLetter(peek) || peek == '_' || Character.isDigit(peek)) {
+                    s = "";
 
                     while(Character.isLetter(peek) || peek == '_' || Character.isDigit(peek)) {
                         s = s + peek;
                         readch(br);
                     }
-
-                    return switch (s) {
-                        case "assign" -> {
-                            yield Word.assign;
-                        }
-                        case "to" -> {
-                            yield Word.to;
-                        }
-                        case "if" -> {
-                            yield Word.iftok;
-                        }
-                        case "else" -> {
-                            yield Word.elsetok;
-                        }
-                        case "do" -> {
-                            yield Word.dotok;
-                        }
-                        case "for" -> {
-                            yield Word.fortok;
-                        }
-                        case "begin" -> {
-                            yield Word.begin;
-                        }
-                        case "end" -> {
-                            yield Word.end;
-                        }
-                        case "print" -> {
-                            yield Word.print;
-                        }
-                        case "read" -> {
-                            yield Word.read;
-                        }
-                        default -> {
-                            if (comOpen || comment) {
-                                /* it's a comment?
-                                   tag 0 is not printed */
-                                yield lexical_scan(br);
-                            }else if (checkVar(s)){
-                                //is a variable?
-                                yield new Word(Tag.ID, s);
-                            }else {
-                                // no comments, no variable
-                                System.err.println("Erroneous character: " + peek);
-                                yield null;
+                    if (s.matches("-?\\d+")){
+                        return new NumberTok(Tag.NUM, Integer.parseInt(s));
+                    } else {
+                        return switch (s) {
+                            case "assign" -> Word.assign;
+                            case "to" -> Word.to;
+                            case "if" -> Word.iftok;
+                            case "else" -> Word.elsetok;
+                            case "do" -> Word.dotok;
+                            case "for" -> Word.fortok;
+                            case "begin" -> Word.begin;
+                            case "end" -> Word.end;
+                            case "print" -> Word.print;
+                            case "read" -> Word.read;
+                            default -> {
+                                if (checkVar(s)){
+                                    //is a variable?
+                                    yield new Word(Tag.ID, s);
+                                }else {
+                                    // no comments, no variable
+                                    System.err.println("Erroneous character: " + peek);
+                                    yield null;
+                                }
                             }
-                        }
-                    };
-                } else if (!Character.isDigit(peek)) {
-                    System.err.println("Erroneous character: " + peek);
-                    return null;
-                } else {
+                        };
+                    }
+                } else if (Character.isDigit(peek) || peek == '_'){
                     s = "" + peek;
                     readch(br);
 
-                    while(Character.isDigit(peek)) {
+                    while(Character.isDigit(peek) || peek == '_' || Character.isLetter(peek)) {
                         s = s + peek;
                         readch(br);
                     }
 
                     try {
-                        int num = Integer.parseInt(s);
-                        if (comOpen || comment) {
-                            // it's a comment?
-                            
-                            return lexical_scan(br);
-                        }else{ //is a num?
-                            return new NumberTok(256, num);
-                        }
-
+                        return new NumberTok(256, Integer.parseInt(s));
                     } catch (NumberFormatException var5) {
                         var5.printStackTrace();
                         return new Token(Tag.EOF);
                     }
+                } else {
+                    System.err.println("Erroneous character: " + peek);
+                    return null;
                 }
         }
     }
@@ -297,14 +281,7 @@ public class Lexer {
             Token tok;
             do {
                 tok = lex.lexical_scan(br); // take token
-                if (tok.tag != 0){ // is a comment?
-                    if(tok.tag == -2){ // is a */ or not ?
-                        System.out.println("Scan: "+ Token.mult);
-                        System.out.println("Scan: " + Token.div);
-                    }else{
-                        System.out.println("Scan: " + tok);
-                    }
-                }
+                System.out.println("Scan: " + tok);
             } while(tok.tag != -1);
 
             br.close();

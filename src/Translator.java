@@ -55,8 +55,8 @@ public class Translator {
         int label_true, label_false;
         switch(look.tag) {
             case Tag.READ: {
+                //invokestatic inside of idlist
                 match(Tag.READ);
-                //code.emit(OpCode.invokestatic, 0);
                 match('(');
                 idlist(false);
                 match(')');
@@ -70,9 +70,8 @@ public class Translator {
             case Tag.PRINT: {
                 match(Tag.PRINT);
                 match(Token.lpt.tag); // aperta tonda
-                exprlist();
+                exprlist(1);
                 match(Token.rpt.tag); // tonda chiusa
-                code.emit(OpCode.invokestatic, 1);
                 break;
             }
             case Tag.FOR:{
@@ -98,6 +97,7 @@ public class Translator {
                 label_true = code.newLabel();
                 label_false = code.newLabel();
                 bexpr(label_true, label_false); // 5<3
+
                 if (look.tag == Token.rpt.tag) { // )
                     match(Token.rpt.tag);
                     code.emitLabel(label_true);
@@ -134,7 +134,6 @@ public class Translator {
         if(look.tag==Tag.ASSIGN || look.tag==Tag.PRINT || look.tag==Tag.READ || look.tag==Tag.FOR ||look.tag==Tag.IF || look.tag=='{') {
             int lnext = code.newLabel();
             stat(lnext);
-
             code.emit(OpCode.GOto, lnext); // GOTO label
             code.emitLabel(lnext); // Lx
             statlistp(lnext_prog);
@@ -169,7 +168,6 @@ public class Translator {
             expr();
             match(Tag.TO);
             idlist(true);
-            //code.emit(OpCode.pop);
             match(Token.rpq.tag);
             assignlistp();
         } else {
@@ -184,7 +182,6 @@ public class Translator {
                 expr();
                 match(Tag.TO);
                 idlist(true);
-                //code.emit(OpCode.pop);
                 match(Token.rpq.tag);
                 assignlistp();
                 break;
@@ -261,7 +258,8 @@ public class Translator {
                 st.insert(((Word) look).lexeme, count++); // create new addr in a library.SymbolTable
             }
             match(Tag.ID);
-            // if tag = , ID <idlistp> allora dup
+            // if tag = , ID seguito da <idlistp> allora duplico perchè ho più elementi
+            // example assign [+(2,3) to var1, var2, var3]
             if (look.tag == Token.comma.tag && isAssign) {
                 code.emit(OpCode.dup);
                 code.emit(OpCode.istore, id_addr);
@@ -300,6 +298,7 @@ public class Translator {
                         code.emit(OpCode.invokestatic, 0);
                     }
                     code.emit(OpCode.istore, id_addr);
+                    idlistp(false);
                 }
                 break;
             case ')':
@@ -320,7 +319,6 @@ public class Translator {
                 break;
             }
             case ">":{
-                //code.emitLabel(code.label);
                 code.emit(OpCode.if_icmpgt, label_true);
                 break;
             }
@@ -350,8 +348,7 @@ public class Translator {
             case '+' -> {
                 match(Token.plus.tag);
                 match(Token.lpt.tag);
-                exprlist();
-                code.emit(OpCode.iadd);
+                exprlist(2); // iadd
                 match(Token.rpt.tag);
             }
             case '-' -> {
@@ -363,8 +360,7 @@ public class Translator {
             case '*' -> {
                 match(Token.mult.tag);
                 match(Token.lpt.tag);
-                exprlist();
-                code.emit(OpCode.imul);
+                exprlist(3); // imul
                 match(Token.rpt.tag);
             }
             case '/' -> {
@@ -390,7 +386,7 @@ public class Translator {
         }
     }
 
-    private void exprlist() {
+    private void exprlist(int flag) {
         switch (look.tag){
             case '+':
             case '-':
@@ -398,27 +394,55 @@ public class Translator {
             case '/':
             case Tag.NUM:
             case Tag.ID:
-                expr(); // TODO: fare print(1+2)
-                exprlistp();
+                expr();
+                if (flag == 1){
+                    code.emit(OpCode.invokestatic, 1);
+                }
+                exprlistp(flag);
                 break;
             default:
                 error("Error in exprlist");
         }
-
     }
 
-    private void exprlistp() {
+    private void exprlistp(int flag) {
         switch (look.tag){
             case ',':
                 match(Token.comma.tag);
                 if (look.tag == Token.lpt.tag){
                     match(Token.lpt.tag);
                     expr();
-                    exprlistp();
+                    switch (flag){
+                        case 1:
+                            code.emit(OpCode.invokestatic, 1);
+                            break;
+                        case 2:
+                            code.emit(OpCode.iadd);
+                            break;
+                        case 3:
+                            code.emit(OpCode.imul);
+                            break;
+                        default:
+                            break;
+                    }
+                    exprlistp(flag);
                     match(Token.rpt.tag);
                 }else {
                     expr();
-                    exprlistp();
+                    switch (flag){
+                        case 1:
+                            code.emit(OpCode.invokestatic, 1);
+                            break;
+                        case 2:
+                            code.emit(OpCode.iadd);
+                            break;
+                        case 3:
+                            code.emit(OpCode.imul);
+                            break;
+                        default:
+                            break;
+                    }
+                    exprlistp(flag);
                 }
                 break;
             case ')':
