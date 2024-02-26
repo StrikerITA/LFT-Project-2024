@@ -119,10 +119,9 @@ public class Lexer {
                 return Token.minus;
             case '/':
                 readch(br);
-                if(Character.isLetterOrDigit(peek)){
+                if(Character.isLetter(peek)||Character.isDigit(peek)){
                     return Token.div;
-                }
-                else {
+                } else {
                     if(peek == '/'){
                         while(peek != '\n' && peek != (char)-1){
                             readch(br);
@@ -131,14 +130,19 @@ public class Lexer {
                         do {
                             do {
                                 readch(br);
-                            }
-                            while(peek!='*');
+                            } while(peek!='*');
                             readch(br);
                             while(peek == '*'){
                                 readch(br);
                             }
+                        } while(peek != '/');
+                    } else if(peek==' '){
+                        readch(br);
+                        if(peek == '/'){
+                            while(peek != '\n' && peek != (char)-1){
+                                readch(br);
+                            }
                         }
-                        while(peek != '/');
                     } else {
                         System.err.println("Error, comment was not closed before end of file");
                         return null;
